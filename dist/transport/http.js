@@ -98,7 +98,7 @@ function handleHealthCheck(res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
         status: 'healthy',
-        service: 'avalogica-ai-news-mcp',
+        service: 'avalogica-x-mcp',
         version: '0.1.0',
         timestamp: new Date().toISOString()
     }));
@@ -121,13 +121,12 @@ function logServerStart(config) {
     const displayUrl = config.isProduction
         ? `Port ${config.port}`
         : `http://localhost:${config.port}`;
-    // console.error(`[AI News MCP] Server listening on ${displayUrl}`);
     if (!config.isProduction) {
         console.log('Put this in your client config:');
         console.log(JSON.stringify({
-            "mcpServers": {
-                "avalogica-ai-news": {
-                    "url": `http://localhost:${config.port}/mcp`
+            mcpServers: {
+                "avalogica-x-mcp": {
+                    url: `http://localhost:${config.port}/mcp`
                 }
             }
         }, null, 2));
