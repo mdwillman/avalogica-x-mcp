@@ -1,53 +1,39 @@
-# Avalogica AI News MCP
+# Avalogica X MCP
 
-**Version:** 0.2.0  
-**License:** MIT
+**Version:** 0.1.0
 
-The Avalogica AI News MCP server combines the original Avalogica weather forecasting tool with a new AI and technology news update tool. It follows the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) specification and works with Atlas, the Dedalus SDK, and other compatible clients.
+The Avalogica X MCP server provides integration with X (Twitter), allowing clients to link accounts, post updates, fetch recent posts, and summarize posting history. It follows the Model Context Protocol (MCP) specification and works with Atlas, the Dedalus SDK, and other compatible clients.
 
 ---
 
 ## Features
 
-- **Weather forecasts** via the `get_forecast` tool (multi-day daily highs/lows).
-- **Hourly weather** via the `get_hourly_forecast` tool (24–48h hourly temps and precip probabilities).
-- **Air quality & marine conditions** via the `get_air_quality` and `get_marine_conditions` tools backed by Open-Meteo.
-- **AI technology briefings** via the `get_tech_update` tool powered by OpenAI's Responses API with web search preview.
-- Dual transports (STDIO and HTTP) with a `/health` route for readiness checks.
-- TypeScript-first build pipeline with strict type checking.
+- Link an X account via OAuth2/PKCE
+- Post updates to X
+- Fetch recent posts
+- Summarize recent post history (tone, topics, interests)
+- Dual transports (STDIO and HTTP) with a /health route
 
 ---
 
 ## Prerequisites
 
 - Node.js 18 or later
-- An OpenAI API key with access to the Responses API (`OPENAI_API_KEY`).
+- OpenAI API key (`OPENAI_API_KEY`)
+- X OAuth client credentials (`X_CLIENT_ID`, `X_CLIENT_SECRET`)
 
 ---
 
-## Installation
-
-```bash
-git clone https://github.com/mdwillman/avalogica-ai-news-mcp.git
-cd avalogica-ai-news-mcp
-npm install
-```
-
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in any required values.
-
-```bash
-cp .env.example .env
+Create a .env file with:  
 ```
-
-```dotenv
-OPENAI_API_KEY=sk-...
-WEATHER_API_KEY=optional
-# PORT=3002
+OPENAI_API_KEY=...
+X_CLIENT_ID=...
+X_CLIENT_SECRET=...
+PORT=3002
+NODE_ENV=development
 ```
-
-`WEATHER_API_KEY` is currently optional. `OPENAI_API_KEY` is required when calling `get_tech_update`.
 
 ---
 
@@ -69,50 +55,17 @@ The HTTP server exposes:
 
 ## Tools
 
-### `get_forecast`
-- **Input:** `{ latitude: number, longitude: number, days?: number }`
-- **Output:** Plain-text daily high/low temperature summary.
+### `link_x_account`
+- **Description:** Initiate OAuth2/PKCE flow to link an X account.
 
-### `get_hourly_forecast`
-- **Input:** `{ latitude: number, longitude: number, hours?: number }` (default `hours = 24`, max `48`)
-- **Output:** Plain-text hourly summary (temperatures and precipitation probabilities) over the requested horizon.
+### `post_to_x`
+- **Description:** Post a new update to the linked X account.
 
-### `get_air_quality`
-- **Input:** `{ latitude: number, longitude: number, hours?: number }` (default `hours = 24`, max `120`)
-- **Output:** Plain-text snapshot of current air quality plus a short outlook, including:
-  - US AQI and European AQI categories where available
-  - PM2.5 and PM10 estimates
+### `get_recent_posts`
+- **Description:** Retrieve recent posts from the linked X account.
 
-### `get_marine_conditions`
-- **Input:** `{ latitude: number, longitude: number, hours?: number }` (default `hours = 24`, max `120`)
-- **Output:** Plain-text summary of near-term marine conditions, including:
-  - Wave height, direction, and period
-  - Sea surface temperature
-  - Max wave height over the requested window
-
-### `get_tech_update`
-- **Input:** `{ topic: string }`
-  - Supported topics: `newModels`, `aiProductUpdates`, `techResearch`, `polEthicsAndSafety`, `upcomingEvents`.
-- **Behavior:**
-  1. Validates the topic.
-  2. Calls OpenAI's Responses API (`model: gpt-4.1-2025-04-14`) with web search preview enabled.
-  3. Returns a JSON payload (stringified in MCP `text` content) containing:
-     - `content`: Narrative summary
-     - `citations`: Array of `{ label, url }`
-     - `model`, `createdAt`, `topic`, `title`, `description`
-
-#### Example `call_tool`
-
-```json
-{
-  "name": "get_tech_update",
-  "arguments": {
-    "topic": "newModels"
-  }
-}
-```
-
-The response body contains a JSON-formatted string with the structured result.
+### `summarize_post_history`
+- **Description:** Provide a summary of recent post history, including tone, topics, and interests.
 
 ---
 

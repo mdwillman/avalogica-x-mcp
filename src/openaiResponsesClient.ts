@@ -1,3 +1,5 @@
+// src/openaiResponsesClient.ts
+
 export interface OpenAIResponsesPayload {
   model: string;
   input: string;
@@ -19,7 +21,7 @@ export interface OpenAIResponsesResult {
 /**
  * Minimal client for interacting with the OpenAI Responses API.
  */
-export class NewsClient {
+export class OpenAIResponsesClient {
   private readonly baseUrl = "https://api.openai.com/v1/responses";
 
   constructor(
@@ -27,7 +29,9 @@ export class NewsClient {
     private readonly fetchImpl: typeof fetch = fetch
   ) {}
 
-  async createResponse(payload: OpenAIResponsesPayload): Promise<OpenAIResponsesResult> {
+  async createResponse(
+    payload: OpenAIResponsesPayload
+  ): Promise<OpenAIResponsesResult> {
     const key = this.apiKey ?? process.env.OPENAI_API_KEY;
     if (!key) {
       throw new Error("Missing OPENAI_API_KEY environment variable.");
@@ -62,11 +66,6 @@ export class NewsClient {
     if (!contentType.includes("application/json")) {
       throw new Error("Unexpected response format from OpenAI Responses API.");
     }
-
-    // const json = (await response.json()) as OpenAIResponsesResult;
-    // Debugging: log the full raw response object
-    // console.error("[AI News MCP] 🔍 Raw OpenAI Responses API output:\n", JSON.stringify(json, null, 2));
-    // return json;
 
     return (await response.json()) as OpenAIResponsesResult;
   }

@@ -11,7 +11,7 @@ import { createStandaloneServer } from './server.js';
 import { runStdioTransport, startHttpTransport } from './transport/index.js';
 
 /**
- * Main entry point for the Avalogica AI News MCP Server
+ * Main entry point for the Avalogica X MCP Server
  *
  * Transport selection logic:
  * 1. --stdio flag forces STDIO transport
@@ -36,7 +36,7 @@ async function main() {
             await runStdioTransport(server);
         }
     } catch (error) {
-        console.error("Fatal error running Avalogica AI News MCP server:", error);
+        console.error("Fatal error running Avalogica X MCP server:", error);
         process.exit(1);
     }
 }

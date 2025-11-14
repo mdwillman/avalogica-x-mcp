@@ -1,16 +1,12 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from '@modelcontextprotocol/sdk/types.js';
-import { getForecastTool, getHourlyForecastTool, getTechUpdateTool, getAirQualityTool, getMarineConditionsTool, } from "./tools/index.js";
-/**
- * Main server class for Avalogica AI News MCP integration
- * @class AiNewsServer
- */
-export class AiNewsServer {
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from "@modelcontextprotocol/sdk/types.js";
+import { linkXAccountTool, postToXTool, getRecentPostsTool, summarizePostHistoryTool, } from "./tools/index.js";
+export class AvalogicaXServer {
     server;
     constructor() {
         this.server = new Server({
-            name: 'avalogica-ai-news',
-            version: '0.1.0',
+            name: "avalogica-x-mcp",
+            version: "0.1.0",
         }, {
             capabilities: {
                 tools: {},
@@ -19,182 +15,76 @@ export class AiNewsServer {
         this.setupHandlers();
         this.setupErrorHandling();
     }
-    /**
-     * Registers all MCP tool handlers for the Avalogica AI News MCP server.
-     * @private
-     */
     setupHandlers() {
-        // ---- List Available Tools ----
+        // List tools
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: [
-                getForecastTool.definition,
-                getHourlyForecastTool.definition,
-                getAirQualityTool.definition,
-                getMarineConditionsTool.definition,
-                getTechUpdateTool.definition,
+                linkXAccountTool.definition,
+                postToXTool.definition,
+                getRecentPostsTool.definition,
+                summarizePostHistoryTool.definition,
             ],
         }));
-        // ---- Handle Tool Calls ----
+        // Call tools
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
             switch (name) {
-                case "get_forecast": {
+                case "link_x_account": {
                     if (!args ||
                         typeof args !== "object" ||
-                        typeof args.latitude !== "number" ||
-                        typeof args.longitude !== "number") {
-                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_forecast. Expected { latitude: number, longitude: number, days?: number }.");
+                        typeof args.userId !== "string" ||
+                        typeof args.code !== "string" ||
+                        typeof args.codeVerifier !== "string" ||
+                        typeof args.redirectUri !== "string") {
+                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for link_x_account.");
                     }
-                    return await getForecastTool.handler(args);
+                    return await linkXAccountTool.handler(args);
                 }
-                case "get_hourly_forecast": {
+                case "post_to_x": {
                     if (!args ||
                         typeof args !== "object" ||
-                        typeof args.latitude !== "number" ||
-                        typeof args.longitude !== "number" ||
-                        (args.hours !== undefined &&
-                            typeof args.hours !== "number")) {
-                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_hourly_forecast. Expected { latitude: number, longitude: number, hours?: number }.");
+                        typeof args.userId !== "string" ||
+                        typeof args.blurb !== "string") {
+                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for post_to_x.");
                     }
-                    return await getHourlyForecastTool.handler(args);
+                    return await postToXTool.handler(args);
                 }
-                case "get_air_quality": {
+                case "get_recent_posts": {
                     if (!args ||
                         typeof args !== "object" ||
-                        typeof args.latitude !== "number" ||
-                        typeof args.longitude !== "number" ||
-                        (args.hours !== undefined &&
-                            typeof args.hours !== "number")) {
-                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_air_quality. Expected { latitude: number, longitude: number, hours?: number }.");
+                        typeof args.userId !== "string" ||
+                        (args.limit !== undefined &&
+                            typeof args.limit !== "number")) {
+                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_recent_posts.");
                     }
-                    return await getAirQualityTool.handler(args);
+                    return await getRecentPostsTool.handler(args);
                 }
-                case "get_marine_conditions": {
+                case "summarize_post_history": {
                     if (!args ||
                         typeof args !== "object" ||
-                        typeof args.latitude !== "number" ||
-                        typeof args.longitude !== "number" ||
-                        (args.hours !== undefined &&
-                            typeof args.hours !== "number")) {
-                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_marine_conditions. Expected { latitude: number, longitude: number, hours?: number }.");
+                        typeof args.userId !== "string") {
+                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for summarize_post_history.");
                     }
-                    return await getMarineConditionsTool.handler(args);
-                }
-                case "get_tech_update": {
-                    if (!args ||
-                        typeof args !== "object" ||
-                        typeof args.topic !== "string" ||
-                        !args.topic.trim()) {
-                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_tech_update. Expected { topic: string }.");
-                    }
-                    return await getTechUpdateTool.handler(args);
+                    return await summarizePostHistoryTool.handler(args);
                 }
                 default:
                     throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
             }
         });
     }
-    /**
-     * Configures error handling and graceful shutdown
-     * @private
-     */
     setupErrorHandling() {
         this.server.onerror = (error) => console.error(error);
-        process.on('SIGINT', async () => {
+        process.on("SIGINT", async () => {
             await this.server.close();
             process.exit(0);
         });
     }
-    /**
-     * Returns the underlying MCP server instance
-     * @returns {Server} MCP server instance
-     */
     getServer() {
         return this.server;
     }
 }
-/**
- * Factory function for creating standalone Avalogica AI News MCP server instances.
- * Used by HTTP transport for session-based connections.
- * @returns {Server} Configured MCP server instance
- */
+// factory used by HTTP transport
 export function createStandaloneServer() {
-    const server = new Server({
-        name: 'avalogica-ai-news-discovery',
-        version: '0.1.0',
-    }, {
-        capabilities: {
-            tools: {},
-        },
-    });
-    // ---- List available tools ----
-    server.setRequestHandler(ListToolsRequestSchema, async () => ({
-        tools: [
-            getForecastTool.definition,
-            getHourlyForecastTool.definition,
-            getAirQualityTool.definition,
-            getMarineConditionsTool.definition,
-            getTechUpdateTool.definition,
-        ],
-    }));
-    // ---- Handle tool calls ----
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        const { name, arguments: args } = request.params;
-        switch (name) {
-            case "get_forecast": {
-                if (!args ||
-                    typeof args !== "object" ||
-                    typeof args.latitude !== "number" ||
-                    typeof args.longitude !== "number") {
-                    throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_forecast. Expected { latitude: number, longitude: number, days?: number }.");
-                }
-                return await getForecastTool.handler(args);
-            }
-            case "get_hourly_forecast": {
-                if (!args ||
-                    typeof args !== "object" ||
-                    typeof args.latitude !== "number" ||
-                    typeof args.longitude !== "number" ||
-                    (args.hours !== undefined &&
-                        typeof args.hours !== "number")) {
-                    throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_hourly_forecast. Expected { latitude: number, longitude: number, hours?: number }.");
-                }
-                return await getHourlyForecastTool.handler(args);
-            }
-            case "get_air_quality": {
-                if (!args ||
-                    typeof args !== "object" ||
-                    typeof args.latitude !== "number" ||
-                    typeof args.longitude !== "number" ||
-                    (args.hours !== undefined &&
-                        typeof args.hours !== "number")) {
-                    throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_air_quality. Expected { latitude: number, longitude: number, hours?: number }.");
-                }
-                return await getAirQualityTool.handler(args);
-            }
-            case "get_marine_conditions": {
-                if (!args ||
-                    typeof args !== "object" ||
-                    typeof args.latitude !== "number" ||
-                    typeof args.longitude !== "number" ||
-                    (args.hours !== undefined &&
-                        typeof args.hours !== "number")) {
-                    throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_marine_conditions. Expected { latitude: number, longitude: number, hours?: number }.");
-                }
-                return await getMarineConditionsTool.handler(args);
-            }
-            case "get_tech_update": {
-                if (!args ||
-                    typeof args !== "object" ||
-                    typeof args.topic !== "string" ||
-                    !args.topic.trim()) {
-                    throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_tech_update. Expected { topic: string }.");
-                }
-                return await getTechUpdateTool.handler(args);
-            }
-            default:
-                throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
-        }
-    });
-    return server;
+    const instance = new AvalogicaXServer();
+    return instance.getServer();
 }

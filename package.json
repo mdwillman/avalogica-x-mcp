@@ -1,11 +1,11 @@
 {
-  "name": "avalogica-ai-news-mcp",
+  "name": "avalogica-x-mcp",
   "version": "0.2.0",
-  "description": "Avalogica AI News MCP server delivering weather forecasts and AI technology updates via the Model Context Protocol (MCP).",
+  "description": "Avalogica X MCP server for linking to X, retrieving posts, summarizing history, and posting on behalf of the user.",
   "private": false,
   "type": "module",
   "bin": {
-    "avalogica-ai-news": "./dist/index.js"
+    "avalogica-x-mcp": "./dist/index.js"
   },
   "files": ["dist"],
   "scripts": {
@@ -21,16 +21,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mdwillman/avalogica-ai-news-mcp.git"
+    "url": "https://github.com/mdwillman/avalogica-x-mcp.git"
   },
   "keywords": [
     "mcp",
+    "modelcontextprotocol",
     "avalogica",
-    "weather",
-    "forecast",
-    "open-meteo",
-    "ai",
-    "news"
+    "x",
+    "twitter",
+    "oauth",
+    "pkce",
+    "social",
+    "posts",
+    "summarization",
+    "firestore",
+    "firebase",
+    "cloud-run"
   ],
   "author": {
     "name": "Marshall D. Willman",
@@ -38,14 +44,15 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mdwillman/avalogica-ai-news-mcp/issues"
+    "url": "https://github.com/mdwillman/avalogica-x-mcp/issues"
   },
-  "homepage": "https://github.com/mdwillman/avalogica-ai-news-mcp#readme",
+  "homepage": "https://github.com/mdwillman/avalogica-x-mcp#readme",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.3",
+    "firebase-admin": "^12.0.0",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1"
   },
