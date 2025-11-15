@@ -19,6 +19,9 @@ export function startHttpTransport(config) {
             case '/health':
                 handleHealthCheck(res);
                 break;
+            case config.xRedirectPath:
+                await handleXOauthCallback(req, res, config);
+                break;
             default:
                 handleNotFound(res);
         }
@@ -64,19 +67,19 @@ async function handleMcpRequest(req, res, config) {
  * @private
  */
 async function createNewSession(req, res, config) {
-    // ✅ create fresh AI News server instance
+    // ✅ create fresh Avalogica X MCP server instance
     const serverInstance = createStandaloneServer();
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (sessionId) => {
             sessions.set(sessionId, { transport, server: serverInstance });
-            // console.error('[AI News MCP] New session created:', sessionId);
+            // console.error('[avalogica-x-mcp] New session created:', sessionId);
         }
     });
     transport.onclose = () => {
         if (transport.sessionId) {
             sessions.delete(transport.sessionId);
-            // console.error('[AI News MCP] Session closed:', transport.sessionId);
+            // console.error('[avalogica-x-mcp] Session closed:', transport.sessionId);
         }
     };
     try {
@@ -84,9 +87,54 @@ async function createNewSession(req, res, config) {
         await transport.handleRequest(req, res);
     }
     catch (error) {
-        // console.error('[AI News MCP] Streamable HTTP connection error:', error);
+        // console.error('[avalogica-x-mcp] Streamable HTTP connection error:', error);
         res.statusCode = 500;
         res.end('Internal server error');
+    }
+}
+/**
+ * Handles X OAuth callback endpoint
+ * NOTE: At this stage we only parse the query and return a simple response.
+ * The actual token exchange + persistence logic will live here (or be delegated)
+ * when we fully migrate the flow into avalogica-x-mcp.
+ *
+ * @param {IncomingMessage} req - HTTP request
+ * @param {ServerResponse} res - HTTP response
+ * @param {Config} _config - Server configuration
+ * @private
+ */
+async function handleXOauthCallback(req, res, _config) {
+    try {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        console.log('[avalogica-x-mcp] OAuth callback received from X', {
+            codePresent: !!code,
+            statePresent: !!state
+        });
+        // TODO: validate state, look up user, exchange `code` for tokens,
+        //       and persist credentials. For now, just acknowledge.
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(`
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>X account linked</title>
+  </head>
+  <body>
+    <p>Your X account authorization has been received by Avalogica X MCP.</p>
+    <p>You can close this window and return to the app.</p>
+  </body>
+</html>
+        `.trim());
+    }
+    catch (error) {
+        console.error('[avalogica-x-mcp] Error handling OAuth callback:', error);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.end('Error handling X OAuth callback.');
     }
 }
 /**
@@ -130,5 +178,9 @@ function logServerStart(config) {
                 }
             }
         }, null, 2));
+        console.log(`OAuth redirect URI (X): ${config.xRedirectUri}`);
+    }
+    else {
+        console.log(`[avalogica-x-mcp] HTTP server listening on ${displayUrl}`);
     }
 }

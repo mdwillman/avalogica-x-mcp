@@ -1,8 +1,15 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
-import type { LinkXAccountArgs, LinkXAccountResult, XCredentials } from "../types.js";
+import type {
+  LinkXAccountArgs,
+  LinkXAccountResult,
+  XCredentials,
+} from "../types.js";
 import { XClient } from "../xClient.js";
 import { saveUserXCreds } from "../xCredsStore.js";
+import { loadConfig } from "../config.js";
+
+const config = loadConfig();
 
 export const linkXAccountTool = {
   definition: {
@@ -30,15 +37,26 @@ export const linkXAccountTool = {
         redirectUri: {
           type: "string",
           description:
-            "The redirect URI used when initiating the OAuth flow (must match X app config).",
+            "Legacy field; optional. The server now uses its configured redirect URI (X_REDIRECT_BASE_URL/X_REDIRECT_PATH) and ignores this value.",
         },
       },
-      required: ["userId", "code", "codeVerifier", "redirectUri"],
+      // redirectUri is now optional; the server uses its own configured redirect URI.
+      required: ["userId", "code", "codeVerifier"],
+      additionalProperties: false,
     },
   },
 
   handler: async (args: LinkXAccountArgs): Promise<CallToolResult> => {
-    const { userId, code, codeVerifier, redirectUri } = args;
+    const { userId, code, codeVerifier } = args;
+
+    // Use the configured redirect URI for the token exchange.
+    const redirectUri = config.xRedirectUri;
+    if (!redirectUri) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        "No redirect URI configured. Set X_REDIRECT_BASE_URL (and optional X_REDIRECT_PATH) for avalogica-x-mcp."
+      );
+    }
 
     try {
       const client = new XClient();

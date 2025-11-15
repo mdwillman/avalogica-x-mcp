@@ -16,7 +16,7 @@ export interface LinkXAccountArgs {
   userId: string;
   code: string;
   codeVerifier: string;
-  redirectUri: string;
+  redirectUri?: string;
 }
 
 export interface LinkXAccountResult {
