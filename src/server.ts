@@ -7,6 +7,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import {
+  startLinkXAccountTool,
   linkXAccountTool,
   postToXTool,
   getRecentPostsTool,
@@ -44,6 +45,7 @@ export class AvalogicaXServer {
     // List tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
+        startLinkXAccountTool.definition,
         linkXAccountTool.definition,
         postToXTool.definition,
         getRecentPostsTool.definition,
@@ -56,6 +58,11 @@ export class AvalogicaXServer {
       const { name, arguments: args } = request.params;
 
       switch (name) {
+        case "start_link_x_account": {
+          // This tool takes no arguments.
+          return await startLinkXAccountTool.handler();
+        }
+
         case "link_x_account": {
           if (
             !args ||
@@ -63,7 +70,10 @@ export class AvalogicaXServer {
             typeof (args as any).userId !== "string" ||
             typeof (args as any).code !== "string" ||
             typeof (args as any).codeVerifier !== "string" ||
-            typeof (args as any).redirectUri !== "string"
+            (
+              (args as any).redirectUri !== undefined &&
+              typeof (args as any).redirectUri !== "string"
+            )
           ) {
             throw new McpError(
               ErrorCode.InvalidParams,

@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from "@modelcontextprotocol/sdk/types.js";
-import { linkXAccountTool, postToXTool, getRecentPostsTool, summarizePostHistoryTool, } from "./tools/index.js";
+import { startLinkXAccountTool, linkXAccountTool, postToXTool, getRecentPostsTool, summarizePostHistoryTool, } from "./tools/index.js";
 export class AvalogicaXServer {
     server;
     constructor() {
@@ -19,6 +19,7 @@ export class AvalogicaXServer {
         // List tools
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: [
+                startLinkXAccountTool.definition,
                 linkXAccountTool.definition,
                 postToXTool.definition,
                 getRecentPostsTool.definition,
@@ -29,13 +30,18 @@ export class AvalogicaXServer {
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args } = request.params;
             switch (name) {
+                case "start_link_x_account": {
+                    // This tool takes no arguments.
+                    return await startLinkXAccountTool.handler();
+                }
                 case "link_x_account": {
                     if (!args ||
                         typeof args !== "object" ||
                         typeof args.userId !== "string" ||
                         typeof args.code !== "string" ||
                         typeof args.codeVerifier !== "string" ||
-                        typeof args.redirectUri !== "string") {
+                        (args.redirectUri !== undefined &&
+                            typeof args.redirectUri !== "string")) {
                         throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for link_x_account.");
                     }
                     return await linkXAccountTool.handler(args);

@@ -1,3 +1,4 @@
+export { startLinkXAccountTool } from "./startLinkXAccount.js";
 export { linkXAccountTool } from "./linkXAccount.js";
 export { postToXTool } from "./postToX.js";
 export { getRecentPostsTool } from "./getRecentPosts.js";

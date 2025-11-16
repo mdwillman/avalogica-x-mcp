@@ -1,4 +1,4 @@
-import type { XCredentials, XPost } from "./types.js";
+import type { XPost } from "./types.js";
 
 const X_API_BASE = process.env.X_API_BASE ?? "https://api.x.com/2";
 
