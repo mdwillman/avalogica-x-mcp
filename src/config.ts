@@ -15,7 +15,7 @@ export interface Config {
   port: number;
 
   /** Current environment mode */
-  nodeEnv: 'development' | 'production';
+  nodeEnv: "development" | "production";
 
   /** Convenience flag for production environment */
   isProduction: boolean;
@@ -36,28 +36,41 @@ export function loadConfig(): Config {
   const xClientSecret = process.env.X_CLIENT_SECRET;
 
   const nodeEnv =
-    process.env.NODE_ENV === 'production' ? 'production' : 'development';
+    process.env.NODE_ENV === "production" ? "production" : "development";
 
-  const port = parseInt(process.env.PORT || '3002', 10);
+  const port = parseInt(process.env.PORT || "3002", 10);
 
-  // New redirect-related config variables
-  const xRedirectBaseUrl = process.env.X_REDIRECT_BASE_URL;
-  const xRedirectPath = process.env.X_REDIRECT_PATH || '/x/oauth/callback';
+  // Explicit redirect URI (takes precedence if set)
+  const xRedirectUriEnv = process.env.X_REDIRECT_URI;
 
-  // Validate required values in production
-  if (nodeEnv === 'production') {
-    if (!xRedirectBaseUrl) {
+  // Legacy / fallback pieces
+  const xRedirectBaseUrlEnv = process.env.X_REDIRECT_BASE_URL || "";
+  const xRedirectPathEnv = process.env.X_REDIRECT_PATH ?? "/x/oauth/callback";
+
+  if (nodeEnv === "production") {
+    if (!xRedirectUriEnv && !xRedirectBaseUrlEnv) {
       throw new Error(
-        'Missing required environment variable: X_REDIRECT_BASE_URL'
+        "Missing redirect configuration: set X_REDIRECT_URI or X_REDIRECT_BASE_URL"
       );
     }
   }
 
-  // Compute full redirect URI if base URL is defined
-  const xRedirectUri =
-    xRedirectBaseUrl !== undefined
-      ? new URL(xRedirectPath, xRedirectBaseUrl).toString()
-      : '';
+  let xRedirectUri = "";
+
+  if (xRedirectUriEnv) {
+    // Preferred: explicit full redirect URI
+    xRedirectUri = xRedirectUriEnv;
+  } else if (xRedirectBaseUrlEnv) {
+    // Backwards-compatible behavior using base + path
+    // Special-case custom schemes like "avalogica://"
+    if (xRedirectBaseUrlEnv.startsWith("avalogica://")) {
+      const base = xRedirectBaseUrlEnv.replace(/\/+$/, ""); // trim trailing slashes
+      const path = xRedirectPathEnv.replace(/^\/+/, ""); // trim leading slashes
+      xRedirectUri = `${base}/${path}`;
+    } else {
+      xRedirectUri = new URL(xRedirectPathEnv, xRedirectBaseUrlEnv).toString();
+    }
+  }
 
   return {
     openAiApiKey,
@@ -65,9 +78,9 @@ export function loadConfig(): Config {
     xClientSecret,
     port,
     nodeEnv,
-    isProduction: nodeEnv === 'production',
-    xRedirectBaseUrl: xRedirectBaseUrl || '',
-    xRedirectPath,
+    isProduction: nodeEnv === "production",
+    xRedirectBaseUrl: xRedirectBaseUrlEnv,
+    xRedirectPath: xRedirectPathEnv,
     xRedirectUri,
   };
 }

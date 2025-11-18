@@ -14,11 +14,10 @@ export class XClient {
     private readonly clientId: string | undefined = process.env.X_CLIENT_ID,
     private readonly clientSecret: string | undefined = process.env.X_CLIENT_SECRET,
     private readonly fetchImpl: typeof fetch = fetch
-  ) {}
+  ) { }
 
   private ensureClientConfig() {
     if (!this.clientId) throw new Error("Missing X_CLIENT_ID");
-    if (!this.clientSecret) throw new Error("Missing X_CLIENT_SECRET");
   }
 
   async exchangeAuthCodeForTokens(
@@ -26,7 +25,10 @@ export class XClient {
     codeVerifier: string,
     redirectUri: string
   ): Promise<ExchangeTokensResult> {
-    this.ensureClientConfig();
+    // PKCE: only client_id is required
+    if (!this.clientId) {
+      throw new Error("Missing X_CLIENT_ID");
+    }
 
     const body = new URLSearchParams({
       grant_type: "authorization_code",
@@ -36,18 +38,21 @@ export class XClient {
       client_id: this.clientId!,
     });
 
-    const response = await this.fetchImpl(`${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization:
-          "Basic " +
-          Buffer.from(`${this.clientId}:${this.clientSecret}`, "utf8").toString("base64"),
-      },
-      body,
-    });
+    console.log("[avalogica-x-mcp] token request body", body.toString());
 
-    const json = await response.json() as any;
+    const response = await this.fetchImpl(
+      `${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          // ❌ No Basic Authorization header for PKCE public client
+        },
+        body,
+      }
+    );
+
+    const json = (await response.json()) as any;
 
     if (!response.ok) {
       throw new Error(

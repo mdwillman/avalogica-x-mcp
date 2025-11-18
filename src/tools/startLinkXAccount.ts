@@ -28,51 +28,6 @@ function generateCodeChallenge(codeVerifier: string): string {
   return crypto.createHash("sha256").update(codeVerifier).digest("base64url");
 }
 
-/**
- * Build the X OAuth2 authorization URL using PKCE.
- *
- * Env vars used:
- *   - X_CLIENT_ID (required)
- *   - X_AUTH_BASE_URL (optional; defaults to Twitter/X OAuth2 URL)
- *   - X_SCOPE (optional; defaults to common scopes)
- */
-function buildAuthorizationUrl(params: {
-  clientId: string;
-  redirectUri: string;
-  codeChallenge: string;
-  state: string;
-  scope?: string;
-  authBaseUrl?: string;
-}): string {
-  const {
-    clientId,
-    redirectUri,
-    codeChallenge,
-    state,
-    scope,
-    authBaseUrl,
-  } = params;
-
-  const base =
-    authBaseUrl ?? "https://twitter.com/i/oauth2/authorize"; // adjust if you prefer api.x.com
-
-  const url = new URL(base);
-
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set(
-    "scope",
-    scope ??
-      ["tweet.read", "tweet.write", "users.read", "offline.access"].join(" ")
-  );
-  url.searchParams.set("state", state);
-  url.searchParams.set("code_challenge", codeChallenge);
-  url.searchParams.set("code_challenge_method", "S256");
-
-  return url.toString();
-}
-
 export const startLinkXAccountTool = {
   definition: {
     name: "start_link_x_account",
@@ -89,9 +44,20 @@ export const startLinkXAccountTool = {
 
   handler: async (): Promise<CallToolResult> => {
     const clientId = process.env.X_CLIENT_ID;
-    const redirectUri = config.xRedirectUri;
-    const authBaseUrl = process.env.X_AUTH_BASE_URL;
-    const scope = process.env.X_SCOPE;
+    const redirectUri = config.xRedirectUri; // e.g. "avalogica://x-oauth-callback"
+
+    console.log("[avalogica-x-mcp] redirectUri from config:", redirectUri, {
+      xRedirectUriEnv: process.env.X_REDIRECT_URI,
+      xRedirectBaseUrlEnv: process.env.X_REDIRECT_BASE_URL,
+      xRedirectPathEnv: process.env.X_REDIRECT_PATH,
+    });
+
+    const authBaseUrl =
+      process.env.X_AUTH_BASE_URL ??
+      "https://twitter.com/i/oauth2/authorize";
+    const scopeEnv = process.env.X_SCOPE;
+    const scope =
+      scopeEnv ?? "tweet.read tweet.write users.read offline.access";
 
     if (!clientId) {
       throw new McpError(
@@ -112,14 +78,17 @@ export const startLinkXAccountTool = {
       const codeChallenge = generateCodeChallenge(codeVerifier);
       const state = crypto.randomBytes(16).toString("hex");
 
-      const authorizationUrl = buildAuthorizationUrl({
-        clientId,
-        redirectUri,
-        codeChallenge,
-        state,
-        scope,
-        authBaseUrl,
-      });
+      // Build the authorization URL directly, using redirectUri as-is.
+      const url = new URL(authBaseUrl);
+      url.searchParams.set("response_type", "code");
+      url.searchParams.set("client_id", clientId);
+      url.searchParams.set("redirect_uri", redirectUri); // ← no extra slash or path
+      url.searchParams.set("scope", scope);
+      url.searchParams.set("state", state);
+      url.searchParams.set("code_challenge", codeChallenge);
+      url.searchParams.set("code_challenge_method", "S256");
+
+      const authorizationUrl = url.toString();
 
       const payload: StartLinkXAccountResult = {
         authorizationUrl,
@@ -127,7 +96,8 @@ export const startLinkXAccountTool = {
         state,
       };
 
-      // Match linkXAccountTool style: JSON string wrapped in text content
+      console.log("[avalogica-x-mcp] start_link_x_account – payload", payload);
+
       return {
         content: [
           {

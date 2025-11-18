@@ -61,6 +61,12 @@ export const linkXAccountTool = {
     try {
       const client = new XClient();
 
+      console.log("[avalogica-x-mcp] link_x_account – exchanging code", {
+        code,
+        codeVerifier,
+        redirectUri,
+      });
+
       // 1) Exchange authorization code for tokens
       const tokenObj = await client.exchangeAuthCodeForTokens(
         code,
