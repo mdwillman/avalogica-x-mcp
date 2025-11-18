@@ -1,5 +1,5 @@
 import { XClient } from "./xClient.js";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
 const X_TOKENS_COLLECTION = "xTokens";
 let firestoreInitialized = false;
 function ensureFirestore() {
