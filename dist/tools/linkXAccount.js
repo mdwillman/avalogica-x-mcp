@@ -52,26 +52,17 @@ export const linkXAccountTool = {
             let twitterUserId = tokenObj.twitterUserId;
             let twitterHandle = "";
             // 2) Fallback: if token endpoint did not include user_id, fetch via /users/me
-            if (!twitterUserId) {
+            if (!twitterUserId || !twitterHandle) {
                 try {
                     const me = await client.getMe(tokenObj.accessToken);
-                    twitterUserId = me.id;
-                    console.log("[avalogica-x-mcp] link_x_account – fetched user_id via /users/me:", twitterUserId);
-                }
-                catch (err) {
-                    console.warn("[avalogica-x-mcp] link_x_account – could not fetch user_id via /users/me:", err?.message ?? err);
-                }
-            }
-            // 3) Optionally fetch Twitter handle
-            if (twitterUserId) {
-                try {
-                    const me = await client.getUser(tokenObj.accessToken, twitterUserId);
-                    if (me.username) {
+                    twitterUserId = twitterUserId || me.id;
+                    if (!twitterHandle && me.username) {
                         twitterHandle = `@${me.username}`;
                     }
+                    console.log("[avalogica-x-mcp] link_x_account – fetched user via /users/me:", twitterUserId);
                 }
                 catch (err) {
-                    console.warn("[avalogica-x-mcp] link_x_account – couldn’t fetch handle; continuing.", err?.message ?? err);
+                    console.warn("[avalogica-x-mcp] link_x_account – could not fetch user via /users/me:", err?.message ?? err);
                 }
             }
             // 4) Save credentials for this userId
