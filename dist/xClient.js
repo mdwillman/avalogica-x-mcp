@@ -1,4 +1,4 @@
-const X_API_BASE = process.env.X_API_BASE ?? "https://api.x.com/2";
+const X_API_BASE = process.env.X_API_BASE ?? "https://api.twitter.com/2";
 export class XClient {
     clientId;
     clientSecret;
@@ -28,7 +28,7 @@ export class XClient {
             // Note: no client_id here for confidential client; it’s in Basic auth instead
         });
         console.log("[avalogica-x-mcp] token request body", body.toString());
-        const response = await this.fetchImpl(`${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`, {
+        const response = await this.fetchImpl(`${X_API_BASE}/oauth2/token`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -57,7 +57,7 @@ export class XClient {
             refresh_token: refreshToken,
             client_id: this.clientId,
         });
-        const response = await this.fetchImpl(`${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`, {
+        const response = await this.fetchImpl(`${X_API_BASE}/oauth2/token`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",

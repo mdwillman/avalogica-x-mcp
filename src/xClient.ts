@@ -1,6 +1,6 @@
 import type { XPost } from "./types.js";
 
-const X_API_BASE = process.env.X_API_BASE ?? "https://api.x.com/2";
+const X_API_BASE = process.env.X_API_BASE ?? "https://api.twitter.com/2";
 
 export interface ExchangeTokensResult {
   accessToken: string;
@@ -47,7 +47,7 @@ export class XClient {
     );
 
     const response = await this.fetchImpl(
-      `${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`,
+      `${X_API_BASE}/oauth2/token`,
       {
         method: "POST",
         headers: {
@@ -93,13 +93,15 @@ export class XClient {
       client_id: this.clientId!,
     });
 
-    const response = await this.fetchImpl(`${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
-    });
+    const response = await this.fetchImpl(
+      `${X_API_BASE}/oauth2/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      });
 
     const json = await response.json() as any;
 
