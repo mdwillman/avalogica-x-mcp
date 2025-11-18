@@ -25,20 +25,26 @@ export class XClient {
     codeVerifier: string,
     redirectUri: string
   ): Promise<ExchangeTokensResult> {
-    // PKCE: only client_id is required
+    // For confidential clients we need BOTH clientId and clientSecret
     if (!this.clientId) {
       throw new Error("Missing X_CLIENT_ID");
+    }
+    if (!this.clientSecret) {
+      throw new Error("Missing X_CLIENT_SECRET");
     }
 
     const body = new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      code_verifier: codeVerifier,
       redirect_uri: redirectUri,
-      client_id: this.clientId!,
+      code_verifier: codeVerifier,
+      // Note: no client_id here for confidential client; it’s in Basic auth instead
     });
 
-    console.log("[avalogica-x-mcp] token request body", body.toString());
+    console.log(
+      "[avalogica-x-mcp] token request body",
+      body.toString()
+    );
 
     const response = await this.fetchImpl(
       `${X_API_BASE.replace(/\/2$/, "")}/oauth2/token`,
@@ -46,7 +52,12 @@ export class XClient {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          // ❌ No Basic Authorization header for PKCE public client
+          Authorization:
+            "Basic " +
+            Buffer.from(
+              `${this.clientId}:${this.clientSecret}`,
+              "utf8"
+            ).toString("base64"),
         },
         body,
       }
