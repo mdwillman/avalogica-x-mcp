@@ -130,6 +130,41 @@ export class XClient {
             lang: t.lang,
         }));
     }
+    async getFollowingTimeline(accessToken, userId, options) {
+        const maxResults = Math.max(5, Math.min(options.limit, 100));
+        const url = new URL(`${X_API_BASE}/users/${userId}/timelines/reverse_chronological`);
+        url.searchParams.set("max_results", String(maxResults));
+        if (options.sinceId) {
+            url.searchParams.set("since_id", options.sinceId);
+        }
+        if (options.untilId) {
+            url.searchParams.set("until_id", options.untilId);
+        }
+        // Keep fields consistent with getRecentPosts so XPost mapping is the same
+        url.searchParams.set("tweet.fields", "created_at,lang");
+        const response = await this.fetchImpl(url.toString(), {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        const json = (await response.json());
+        if (!response.ok) {
+            throw new Error(`X /users/:id/timelines/reverse_chronological failed: ${response.status} ${response.statusText} - ${JSON.stringify(json)}`);
+        }
+        const data = (json.data ?? []);
+        const posts = data.map((t) => ({
+            id: t.id,
+            text: t.text,
+            createdAt: t.created_at,
+            lang: t.lang,
+        }));
+        const meta = json.meta ?? {};
+        return {
+            posts,
+            nextToken: meta.next_token,
+            prevToken: meta.previous_token,
+        };
+    }
     async postTweet(accessToken, text) {
         const response = await this.fetchImpl(`${X_API_BASE}/tweets`, {
             method: "POST",

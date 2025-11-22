@@ -9,6 +9,12 @@ export interface ExchangeTokensResult {
   twitterUserId?: string;
 }
 
+export interface FollowingTimelineOptions {
+  limit: number;
+  sinceId?: string;
+  untilId?: string;
+}
+
 export class XClient {
   constructor(
     private readonly clientId: string | undefined = process.env.X_CLIENT_ID,
@@ -201,6 +207,64 @@ export class XClient {
       createdAt: t.created_at,
       lang: t.lang,
     }));
+  }
+
+    async getFollowingTimeline(
+    accessToken: string,
+    userId: string,
+    options: FollowingTimelineOptions
+  ): Promise<{
+    posts: XPost[];
+    nextToken?: string;
+    prevToken?: string;
+  }> {
+    const maxResults = Math.max(5, Math.min(options.limit, 100));
+
+    const url = new URL(
+      `${X_API_BASE}/users/${userId}/timelines/reverse_chronological`
+    );
+    url.searchParams.set("max_results", String(maxResults));
+
+    if (options.sinceId) {
+      url.searchParams.set("since_id", options.sinceId);
+    }
+    if (options.untilId) {
+      url.searchParams.set("until_id", options.untilId);
+    }
+
+    // Keep fields consistent with getRecentPosts so XPost mapping is the same
+    url.searchParams.set("tweet.fields", "created_at,lang");
+
+    const response = await this.fetchImpl(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const json = (await response.json()) as any;
+
+    if (!response.ok) {
+      throw new Error(
+        `X /users/:id/timelines/reverse_chronological failed: ${
+          response.status
+        } ${response.statusText} - ${JSON.stringify(json)}`
+      );
+    }
+
+    const data = (json.data ?? []) as any[];
+    const posts: XPost[] = data.map((t) => ({
+      id: t.id,
+      text: t.text,
+      createdAt: t.created_at,
+      lang: t.lang,
+    }));
+
+    const meta = json.meta ?? {};
+    return {
+      posts,
+      nextToken: meta.next_token,
+      prevToken: meta.previous_token,
+    };
   }
 
   async postTweet(accessToken: string, text: string): Promise<string> {

@@ -55,6 +55,23 @@ export interface GetRecentPostsResult {
   twitterHandle?: string;
 }
 
+export interface GetFollowingTimelineArgs {
+  userId: string;
+  limit?: number;
+  sinceId?: string;
+  untilId?: string;
+}
+
+export interface GetFollowingTimelineResult {
+  posts: XPost[];
+  twitterUserId: string;
+  twitterHandle?: string;
+  paging: {
+    nextToken: string | null;
+    prevToken: string | null;
+  };
+}
+
 // --- Summarization ---
 
 export type PostSummaryFocus = "all" | "tone" | "topics" | "interests";
