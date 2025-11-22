@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from "@modelcontextprotocol/sdk/types.js";
-import { startLinkXAccountTool, linkXAccountTool, postToXTool, getRecentPostsTool, summarizePostHistoryTool, } from "./tools/index.js";
+import { startLinkXAccountTool, linkXAccountTool, postToXTool, getRecentPostsTool, getFollowingTimelineTool, summarizePostHistoryTool, } from "./tools/index.js";
 export class AvalogicaXServer {
     server;
     constructor() {
@@ -23,6 +23,7 @@ export class AvalogicaXServer {
                 linkXAccountTool.definition,
                 postToXTool.definition,
                 getRecentPostsTool.definition,
+                getFollowingTimelineTool.definition,
                 summarizePostHistoryTool.definition,
             ],
         }));
@@ -64,6 +65,18 @@ export class AvalogicaXServer {
                         throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_recent_posts.");
                     }
                     return await getRecentPostsTool.handler(args);
+                }
+                case "get_following_timeline": {
+                    if (!args ||
+                        typeof args !== "object" ||
+                        typeof args.userId !== "string" ||
+                        (args.limit !== undefined &&
+                            typeof args.limit !== "number")
+                    // if you exposed sinceId/untilId in the schema, also validate them as strings here
+                    ) {
+                        throw new McpError(ErrorCode.InvalidParams, "Invalid or missing arguments for get_following_timeline.");
+                    }
+                    return await getFollowingTimelineTool.handler(args);
                 }
                 case "summarize_post_history": {
                     if (!args ||

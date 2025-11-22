@@ -11,6 +11,7 @@ import {
   linkXAccountTool,
   postToXTool,
   getRecentPostsTool,
+  getFollowingTimelineTool,
   summarizePostHistoryTool,
 } from "./tools/index.js";
 
@@ -18,6 +19,7 @@ import type {
   LinkXAccountArgs,
   PostToXArgs,
   GetRecentPostsArgs,
+  GetFollowingTimelineArgs,
   SummarizePostHistoryArgs,
 } from "./types.js";
 
@@ -49,6 +51,7 @@ export class AvalogicaXServer {
         linkXAccountTool.definition,
         postToXTool.definition,
         getRecentPostsTool.definition,
+        getFollowingTimelineTool.definition,
         summarizePostHistoryTool.definition,
       ],
     }));
@@ -115,6 +118,25 @@ export class AvalogicaXServer {
           }
           return await getRecentPostsTool.handler(
             args as unknown as GetRecentPostsArgs
+          );
+        }
+
+        case "get_following_timeline": {
+          if (
+            !args ||
+            typeof args !== "object" ||
+            typeof (args as any).userId !== "string" ||
+            ((args as any).limit !== undefined &&
+              typeof (args as any).limit !== "number")
+            // if you exposed sinceId/untilId in the schema, also validate them as strings here
+          ) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              "Invalid or missing arguments for get_following_timeline."
+            );
+          }
+          return await getFollowingTimelineTool.handler(
+            args as unknown as GetFollowingTimelineArgs
           );
         }
 
